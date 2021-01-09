@@ -3,8 +3,9 @@ from random import randint
 import os
 import sys
 
+
 pygame.init()
-pygame.time.set_timer(pygame.USEREVENT, 1500)
+pygame.time.set_timer(pygame.USEREVENT, 3000)
 
 size = w, h = 300, 500
 screen = pygame.display.set_mode(size)
@@ -13,8 +14,9 @@ pygame.display.set_caption('Поймай еду')
 pygame.display.set_icon(pygame.image.load('data/korzina.png'))
 
 running = True
-move_left = False
-move_right = False
+
+speed_food = 1
+speed_korzina = 7
 
 clock = pygame.time.Clock()
 FPS = 60
@@ -24,24 +26,34 @@ fullname1 = os.path.join('data', 'skatert.jpg')
 if not os.path.isfile(fullname1):
     print(f"Файл с изображением '{fullname1}' не найден")
     sys.exit()
-image1 = pygame.image.load(fullname1)
+skatert = pygame.image.load(fullname1)
+
+#  загрузка фона для подсчета жизней
+fullname2 = os.path.join('data', 'life_fon.png')
+if not os.path.isfile(fullname2):
+    print(f"Файл с изображением '{fullname2}' не найден")
+    sys.exit()
+image2 = pygame.image.load(fullname2)
+life_fon = pygame.transform.scale(image2, (50, 50))
+font = pygame.font.SysFont('arial', 25)
 
 #  загрузка корзины
-x1 = 100
-y1 = 50
-fullname = os.path.join('data', 'korzina.png')
-if not os.path.isfile(fullname):
-    print(f"Файл с изображением '{fullname}' не найден")
+fullname3 = os.path.join('data', 'korzina.png')
+if not os.path.isfile(fullname3):
+    print(f"Файл с изображением '{fullname3}' не найден")
     sys.exit()
-image = pygame.image.load(fullname).convert_alpha()
-image2 = pygame.transform.scale(image, (x1, y1))
+image = pygame.image.load(fullname3)
+korzina = pygame.transform.scale(image, (100, 50))
+korzina_rect = korzina.get_rect(centerx=w // 2, bottom=h - 95)
+
 
 #  спрайты еда
 class Food(pygame.sprite.Sprite):
-    def __init__(self, x, speed, surf, group):
+    def __init__(self, x, speed, surf, life, group):
         pygame.sprite.Sprite.__init__(self)
         self.image = surf
         self.rect = self.image.get_rect(center=(x, 0))
+        self.life = life
         self.speed = speed
         self.add(group)
 
@@ -52,11 +64,18 @@ class Food(pygame.sprite.Sprite):
             self.kill()
 
 
-food_images = ['apple.png', 'burger.png', 'cookies.png', 'orange.png',
-               'pizza.png', 'sushi.png',
-               'boot.png', 'disk.png', 'toy.png']
+food_images = ['data/apple.png', 'data/avocado.png', 'data/burger.png', 'data/cookies.png', 'data/orange.png',
+               'data/pizza.png', 'data/sushi.png',
+               'data/boot.png', 'data/disk.png', 'data/phone.png', 'data/toy.png']
 
-food_surf1 = [pygame.image.load('data/' + i).convert_alpha() for i in food_images]
+food_t = {'data/apple.png': 0, 'data/avocado.png': 0, 'data/burger.png': 0,
+          'data/cookies.png': 0, 'data/orange.png': 0,
+          'data/pizza.png': 0, 'data/sushi.png': 0,
+          'data/boot.png': 1, 'data/disk.png': 1, 'data/phone.png': 1, 'data/toy.png': 1}
+
+food_not_eat = ['data/boot.png', 'data/disk.png', 'data/phone.png', 'data/toy.png']
+
+food_surf1 = [pygame.image.load(i).convert_alpha() for i in food_images]
 
 food_surf = [pygame.transform.scale(image, (40, 40)) for image in food_surf1]
 
@@ -64,13 +83,27 @@ food = pygame.sprite.Group()
 
 
 def createFood(group):
+    global speed_food
     index = randint(0, len(food_surf) - 1)
     x = randint(20, w - 20)
-    speed = randint(1, 3)
-    return Food(x, speed, food_surf[index], group)
+    speed_food += 0.08
+    return Food(x, speed_food, food_surf[index], food_t[food_images[index]], group)
 
 
 createFood(food)
+
+life = 3
+
+
+def catchFood():
+    global life
+    for i in food:
+        if korzina_rect.collidepoint(i.rect.center):
+            life -= i.life
+            if life == 0:
+                sys.exit()
+            i.kill()
+
 
 #  основной цикл
 while running:
@@ -80,11 +113,26 @@ while running:
         elif event.type == pygame.USEREVENT:
             createFood(food)
 
-    #  отрисовка кадра
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        korzina_rect.x -= speed_korzina
+        if korzina_rect.x < 0:
+            korzina_rect.x = 0
+    elif keys[pygame.K_RIGHT]:
+        korzina_rect.x += speed_korzina
+        if korzina_rect.x > w - korzina_rect.width:
+            korzina_rect.x = w - korzina_rect.width
+
+    catchFood()
     screen.fill((135, 206, 250))
-    screen.blit(image1, (0, 400))
-    screen.blit(image2, (x1, 355))
+
+    screen.blit(life_fon, (0, 0))
+    text = font.render(str(life), 1, (0, 0, 0))
+    screen.blit(text, (19, 11))
+
+    screen.blit(skatert, (0, 400))
     food.draw(screen)
+    screen.blit(korzina, korzina_rect)
 
     pygame.display.flip()
 
