@@ -3,6 +3,7 @@ from random import randint
 import os
 import sys
 import pygame_menu
+import time
 
 pygame.init()
 
@@ -16,7 +17,12 @@ score = 0
 
 
 def start_the_game():
-    screen.fill((135, 206, 250))  # основного игрового окна
+    screen.fill((135, 206, 250))  # фон основного игрового окна
+
+    # включение фоновой музыки
+    pygame.mixer.music.load('music.mp3')
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.2)
 
     pygame.display.set_caption('Поймай еду')
     pygame.display.set_icon(pygame.image.load('data/korzina.png'))
@@ -86,7 +92,7 @@ def start_the_game():
                  'data/cookies.png': 0, 'data/orange.png': 0,
                  'data/pizza.png': 0, 'data/sushi.png': 0,
                  'data/boot.png': 1, 'data/disk.png': 1,
-                 'data/phone.png': 1, 'data/toy.png': 1}  # словарь со згачением количества жизни
+                 'data/phone.png': 1, 'data/toy.png': 1}  # словарь со значением количества жизни
 
     food_score = {'data/apple.png': 50, 'data/avocado.png': 50, 'data/burger.png': 50,
                   'data/cookies.png': 100, 'data/orange.png': 100,
@@ -100,7 +106,7 @@ def start_the_game():
 
     food = pygame.sprite.Group()
 
-    def createFood(group):
+    def createFood(group):  # рандомное добавление в спрайт Еда
         global speed_food
         index = randint(0, len(food_surf) - 1)
         x = randint(20, w - 20)
@@ -115,10 +121,25 @@ def start_the_game():
         global score
         for i in food:
             if korzina_rect.collidepoint(i.rect.center):
-                life -= i.life
-                score += i.score
+                life -= i.life  # жизнь
+                score += i.score  # очки
                 if life == 0:
-                    sys.exit()
+                    # sys.exit()
+                    red = (255, 0, 0)
+                    size = 300, 500
+                    new_screen = pygame.display.set_mode(size)
+                    new_menu = pygame_menu.Menu(500, 300, 'YOU DIED', theme=pygame_menu.themes.THEME_DARK)
+                    new_menu.add_label(f"Ваш счёт: {score}")
+                    new_menu.add_button('Играть снова', start_the_game)
+                    new_menu.add_button('Выход', pygame_menu.events.EXIT)
+
+                    pygame.mixer.music.load('fail_music.mp3')
+                    pygame.mixer.music.play()
+                    pygame.mixer.music.set_volume(0.4)
+
+                    life = 3
+                    score = 0
+                    new_menu.mainloop(new_screen)
                 i.kill()
 
     #  основной цикл игры
@@ -164,7 +185,7 @@ def start_the_game():
 
 
 # меню заставки игры
-menu = pygame_menu.Menu(500, 300, 'Welcom', theme=pygame_menu.themes.THEME_GREEN)
+menu = pygame_menu.Menu(500, 300, 'Welcome', theme=pygame_menu.themes.THEME_GREEN)
 
 menu.add_button('Играть', start_the_game)
 menu.add_button('Выход', pygame_menu.events.EXIT)
