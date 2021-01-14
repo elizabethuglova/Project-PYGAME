@@ -130,6 +130,7 @@ def start_the_game():
     def catchFood():
         global life
         global score
+        global speed_food
         for i in food:
             if korzina_rect.collidepoint(i.rect.center):
                 life -= i.life  # жизнь
@@ -151,6 +152,7 @@ def start_the_game():
 
                     life = 3
                     score = 0
+                    speed_food = 1
                     new_menu.mainloop(new_screen)
                 i.kill()
 
